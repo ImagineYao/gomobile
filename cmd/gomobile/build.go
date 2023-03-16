@@ -247,6 +247,7 @@ var (
 	buildBundleID   string      // -bundleid
 	buildIOSVersion string      // -iosversion
 	buildAndroidAPI int         // -androidapi
+	buildCgoflags   string      // -cgoflags
 	buildTags       stringsFlag // -tags
 )
 
@@ -258,6 +259,7 @@ func addBuildFlags(cmd *command) {
 	cmd.flag.StringVar(&buildBundleID, "bundleid", "", "")
 	cmd.flag.StringVar(&buildIOSVersion, "iosversion", "13.0", "")
 	cmd.flag.IntVar(&buildAndroidAPI, "androidapi", minAndroidAPI, "")
+	cmd.flag.StringVar(&buildCgoflags, "cgoflags", "", "")
 
 	cmd.flag.BoolVar(&buildA, "a", false, "")
 	cmd.flag.BoolVar(&buildI, "i", false, "")
@@ -428,6 +430,16 @@ func parseBuildTarget(buildTarget string) ([]targetInfo, error) {
 	}
 
 	return targets, nil
+}
+
+func parseCgoLdFlags(cgoLdFlags string) (map[string]string, error) {
+	var flags map[string]string
+	for _, flag := range strings.Split(cgoLdFlags, ",") {
+		tuple := strings.SplitN(flag, "/", 2)
+		arch := tuple[1]
+		flags[arch] = flag
+	}
+	return flags, nil
 }
 
 type targetInfo struct {

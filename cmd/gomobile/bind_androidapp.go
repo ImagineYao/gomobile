@@ -19,7 +19,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func goAndroidBind(gobind string, pkgs []*packages.Package, targets []targetInfo) error {
+func goAndroidBind(gobind string, pkgs []*packages.Package, targets []targetInfo, cgoLdFlags map[string]string) error {
 	if _, err := sdkpath.AndroidHome(); err != nil {
 		return fmt.Errorf("this command requires the Android SDK to be installed: %w", err)
 	}
@@ -57,8 +57,9 @@ func goAndroidBind(gobind string, pkgs []*packages.Package, targets []targetInfo
 	var wg errgroup.Group
 	for _, t := range targets {
 		t := t
+		cgoLdFlag := cgoLdFlags[t.arch]
 		wg.Go(func() error {
-			return buildAndroidSO(androidDir, t.arch)
+			return buildAndroidSO(androidDir, t.arch, cgoLdFlag)
 		})
 	}
 	if err := wg.Wait(); err != nil {
@@ -349,7 +350,7 @@ func writeJar(w io.Writer, dir string) error {
 
 // buildAndroidSO generates an Android libgojni.so file to outputDir.
 // buildAndroidSO is concurrent-safe.
-func buildAndroidSO(outputDir string, arch string) error {
+func buildAndroidSO(outputDir string, arch string, cgoLdFlag string) error {
 	// Copy the environment variables to make this function concurrent-safe.
 	env := make([]string, len(androidEnv[arch]))
 	copy(env, androidEnv[arch])
@@ -357,6 +358,7 @@ func buildAndroidSO(outputDir string, arch string) error {
 	// Add the generated packages to GOPATH for reverse bindings.
 	gopath := fmt.Sprintf("GOPATH=%s%c%s", tmpdir, filepath.ListSeparator, goEnv("GOPATH"))
 	env = append(env, gopath)
+	env = append(env, cgoLdFlag)
 
 	modulesUsed, err := areGoModulesUsed()
 	if err != nil {

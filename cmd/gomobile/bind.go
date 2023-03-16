@@ -80,6 +80,7 @@ func runBind(cmd *command) error {
 	args := cmd.flag.Args()
 
 	targets, err := parseBuildTarget(buildTarget)
+	cgoLdFlags, _ := parseCgoLdFlags(buildCgoflags)
 	if err != nil {
 		return fmt.Errorf(`invalid -target=%q: %v`, buildTarget, err)
 	}
@@ -127,7 +128,7 @@ func runBind(cmd *command) error {
 
 	switch {
 	case isAndroidPlatform(targets[0].platform):
-		return goAndroidBind(gobind, pkgs, targets)
+		return goAndroidBind(gobind, pkgs, targets, cgoLdFlags)
 	case isApplePlatform(targets[0].platform):
 		if !xcodeAvailable() {
 			return fmt.Errorf("-target=%q requires Xcode", buildTarget)
